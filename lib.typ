@@ -1,5 +1,7 @@
 #let authors-state = state("authors", (:))
 #let show-annotations-state = state("show-annotations", false)
+#let page-per-song-state = state("page-per-song", false)
+#let is-first-song-state = state("is-first-song", true)
 
 #let songbook(
   title: none,
@@ -11,6 +13,8 @@
     title-font: "Cormorant SC",
     text-size: 14pt,
     show-annotations: false,
+    page-per-song: false,
+    start-right: true,
   ),
   body,
 ) = {
@@ -39,7 +43,16 @@
     settings.show-annotations = false
   }
 
+  if settings.at("page-per-song", default: none) == none {
+    settings.page-per-song = false
+  }
+
+  if settings.at("start-right", default: none) == none {
+    settings.start-right = true
+  }
+
   show-annotations-state.update(settings.show-annotations)
+  page-per-song-state.update(settings.page-per-song)
 
   set page(paper: settings.paper, margin: 2cm)
 
@@ -65,7 +78,11 @@
           Songs by:\
           #set text(size: 18pt)
           #if authors.len() > 4 {
-            [#authors.slice(0, count: 4).join(", ") and more]
+            let short-authors = ()
+            for x in range(0, 4) {
+              short-authors += (authors.keys().at(x),)
+            }
+            [#short-authors.join(", ") and more]
           } else {
             authors.keys().join(", ")
           }
@@ -73,7 +90,7 @@
       }
     }
 
-    pagebreak(to: "odd")
+    pagebreak(to: if settings.start-right { "odd" } else { none })
   }
 
   counter(page).update(1)
@@ -102,14 +119,17 @@
 
 #let annotation(annotation-text, body) = {
   context {
-    if show-annotations-state.get() {
-      set text(size: 11pt)
-      place(right, dx: -25pt, [#annotation-text])
-    }
+    let show-annotations = show-annotations-state.get()
+    box(width: 100% - (if show-annotations { 3em } else { 0pt }), [
+      #if show-annotations {
+        set text(size: 11pt)
+        place(right, dx: -6pt, [#annotation-text])
+      }
+      #body
+      \
+      \
+    ])
   }
-  [#body
-
-  ]
 }
 
 #let verse(body) = {
@@ -124,7 +144,53 @@
   annotation("[Chorus]", body)
 }
 
+#let author-pill(author) = rect(fill: author.at("color", default: none), stroke: none, radius: 4pt, inset: (
+  x: 8pt,
+  y: 4pt,
+))[#author.name]
+
+#let stacked-header(title: none, author: none) = {
+  [
+    = #title
+
+    #if author != none { align(right, author-pill(author)) }
+  ]
+}
+
+#let inline-header(title: none, author: none) = {
+  [
+    #grid(
+      columns: (1fr, auto),
+      gutter: 12pt,
+      [= #title],
+      if author != none {
+        align(right + bottom)[
+          #author-pill(author) ]
+      } else { [] },
+    )
+  ]
+}
+
+#let song-header(title: none, author: none) = {
+  if title != none {
+    rect(
+      fill: luma(92%),
+      radius: 6pt,
+      inset: 8pt,
+      if str.len(title) > 38 {
+        stacked-header(title: title, author: author)
+      } else {
+        inline-header(title: title, author: author)
+      },
+    )
+  }
+}
+
 #let song(author: none, title: none, body) = {
+  context if page-per-song-state.get() and not is-first-song-state.get() {
+    pagebreak()
+  }
+
   if type(author) == type("") {
     author = (
       name: author,
@@ -142,34 +208,14 @@
   })
 
   [
-    #context {
-      box(
-        width: 100%,
-        height: 2em,
-        [
-          #box(height: 100%, width: 100%, fill: color.hsv(0deg, 0%, 90%, 100%), radius: 5pt)
-
-          #place(left + horizon, box(
-            width: 80%,
-            inset: (left: 20pt, rest: 6pt),
-            [= #title],
-          ))
-
-          #place(right + horizon, box(
-            width: 20%,
-            inset: 6pt,
-            fill: author.color,
-            radius: (right: 5pt),
-            height: 100%,
-            [
-              #set text(size: 10pt, hyphenate: true)
-              #author.name
-            ],
-          ))
-        ],
-      )
-    }
+    #song-header(title: title, author: author)
 
     #body
   ]
+
+  is-first-song-state.update(false)
+}
+
+#let set-page-breaking(value) = {
+  context page-per-song-state.update(value)
 }
