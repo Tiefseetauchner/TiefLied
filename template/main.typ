@@ -1,4 +1,4 @@
-#import "@preview/tieflied:0.1.0": annotation, author, bridge, chorus, song, songbook, verse
+#import "@preview/tieflied:0.1.1": annotation, author, bridge, chorus, song, songbook, verse
 
 #let john-newton = author("John Newton", color: luma(95%))
 
@@ -8,6 +8,7 @@
   title-page: true,
   settings: (
     show-annotations: true,
+    page-per-song: true,
   ),
   [
     #song(author: john-newton, title: "Amazing Grace", [
