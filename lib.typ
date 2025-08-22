@@ -15,6 +15,8 @@
     show-annotations: false,
     page-per-song: false,
     start-right: true,
+    index-by-author: false,
+    index-by-title: true,
   ),
   body,
 ) = {
@@ -49,6 +51,14 @@
 
   if settings.at("start-right", default: none) == none {
     settings.start-right = true
+  }
+
+  if settings.at("index-by-author", default: none) == none {
+    settings.index-by-author = false
+  }
+
+  if settings.at("index-by-title", default: none) == none {
+    settings.index-by-title = true
   }
 
   show-annotations-state.update(settings.show-annotations)
@@ -90,6 +100,83 @@
       }
     }
 
+    context {
+      pagebreak(to: if settings.start-right { "odd" } else { none })
+      columns(if settings.index-by-author and settings.index-by-title { 2 } else { 1 }, gutter: 1cm)[
+        #if settings.index-by-title {
+          [*Titles*
+
+          ]
+          line(length: 40%)
+          set text(size: settings.text-size)
+          let titles = ()
+          let authors = authors-state.final()
+          for author in authors.keys() {
+            for song in authors.at(author).songs {
+              titles.push((author, song))
+            }
+          }
+          let prev-title-first-char = none
+          let sorted-titles = titles.sorted(key: it => lower(it.at(1)))
+          for i in range(0, sorted-titles.len()) {
+            let curr-title-first-char = lower(str.at(sorted-titles.at(i).at(1), 0))
+            if (
+              prev-title-first-char == none or curr-title-first-char != prev-title-first-char
+            ) {
+              prev-title-first-char = lower(str.at(sorted-titles.at(i).at(1), 0))
+              [*#upper(prev-title-first-char)*\
+              ]
+            }
+            context {
+              [
+                #set text(hyphenate: true)
+                #sorted-titles.at(i).at(1)
+                #set text(size: 11pt, hyphenate: false)
+                by #sorted-titles.at(i).at(0)
+
+              ]
+            }
+          }
+
+          colbreak()
+        }
+
+        #if settings.index-by-author {
+          [*Artists*
+
+          ]
+          line(length: 40%)
+          set text(size: settings.text-size)
+          let titles = ()
+          let authors = authors-state.final()
+          for author in authors.keys() {
+            for song in authors.at(author).songs {
+              titles.push((author, song))
+            }
+          }
+          let prev-title-author-first-char = none
+          let sorted-titles = titles.sorted(key: it => lower(it.at(0)))
+          for i in range(0, sorted-titles.len()) {
+            let curr-title-author-first-char = lower(str.at(sorted-titles.at(i).at(0), 0))
+            if (
+              prev-title-author-first-char == none or curr-title-author-first-char != prev-title-author-first-char
+            ) {
+              prev-title-author-first-char = lower(str.at(sorted-titles.at(i).at(0), 0))
+              [*#upper(prev-title-author-first-char)*\
+              ]
+            }
+            context {
+              [
+                #set text(hyphenate: true)
+                #sorted-titles.at(i).at(0): #sorted-titles.at(i).at(1)
+
+
+              ]
+            }
+          }
+        }
+      ]
+    }
     pagebreak(to: if settings.start-right { "odd" } else { none })
   }
 
@@ -199,8 +286,8 @@
   }
 
   context authors-state.update(authors => {
-    if authors.keys().contains(author) {
-      authors.at(author).songs.push(title)
+    if authors.keys().contains(author.name) {
+      authors.at(author.name).songs.push(title)
       return authors
     }
     authors.insert(author.name, (songs: (title,)))

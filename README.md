@@ -19,7 +19,7 @@ To use TiefLied with the Typst web app, choose "Start from template" and select 
 To import the package manually in your Typst project, use:
 
 ```typst
-#import "@preview/tieflied:0.1.1": songbook, song
+#import "@preview/tieflied:0.2.0": songbook, song
 ```
 
 Alternatively, you can download the `lib.typ` file and use:
@@ -49,6 +49,8 @@ The primary layouting consideres multiple `songs` in a `songbook` (Liederbuch).
     show-annotations: false, // Show annotations of verses etc.
     page-per-song: false, // Start a new page per song
     start-right: true, // Skip a page after title
+    index-by-author: false, // Create an index sorted and grouped by authors
+    index-by-title: true, // Create an index sorted and grouped by title
   ),
   [ ... ] // Body, should contain songs
 )
@@ -103,7 +105,7 @@ Annotations not only serve the orientation but also the formatting of the text. 
 ## Example
 
 ```typst
-#import "@preview/tieflied:0.1.1": annotation, author, bridge, chorus, set-page-breaking, song, songbook, verse
+#import "@preview/tieflied:0.2.0": annotation, author, bridge, chorus, set-page-breaking, song, songbook, verse
 
 #let cavetown = author(
   "Cavetown",
